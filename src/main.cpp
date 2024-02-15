@@ -22,20 +22,26 @@ float pressure = 0.0;
 float cutoffFrequency = 1.0;  //maybe not required for acceleration, maybe for pressure
 float delta = 0.2;          //test value for filtering
 
-float lowFilter(float);    //delta only
-float lowFilter2(float);   //with cutofff frequency??? maybe only applicable for 
+float Filter(float);    //delta only
+//float lowFilter2(float);   //with cutofff frequency??? maybe only applicable for pressure 
+//I think the lowpass filter for the analog sensor just belongs to a hardware job...
+
 
 
 void setup() {
-  Serial.begin(9600); 
-  pinMode(IMUpin, INPUT);  //
+  Serial.begin(115200); 
+  Serial.print("PLEASE PLEASE OUTPUT SOMETHING!!!");
+  pinMode(IMUpin, INPUT);  //maybe IMU needs a pin? It'll have to connect with 0x6A, the default i2c address
   pinMode(pressPin, INPUT);//input from pressure
-  Wire.setSCL(19);         //clock at pin 19
-  Wire.setSDA(pressPin);   //analog input from presure sensor
+  Wire.setSCL(19);         //clock at pin 19(I think)
+  Wire.setSDA(pressPin);   //analog input from pressure sensor
   if (!accelerometer.begin_I2C()) {
     Serial.println("CAN'T FIND THE LSM!!!!!");
     while (1) {
-      delay(10);
+      analogWrite(13, 50);
+      delay(100);
+      analogWrite(13, 0);
+      delay(100);
     }
   }
   lsm_accel = accelerometer.getAccelerometerSensor();
@@ -47,7 +53,7 @@ void loop() { // collect 5 times, then average, then filter
   sensors_event_t accel;
   lsm_accel->getEvent(&accel);
 
-  for(int i = 1; i < 5, i++;)
+  for(int i = 1; i < 5; i++)
   {
     float rawPressure = analogRead(pressPin);    //read once
     accelx += accel.acceleration.x;
@@ -58,7 +64,7 @@ void loop() { // collect 5 times, then average, then filter
   pressure = pressure/5;                         //find average
   accelx = accelx/5;                               //average
 
-  pressure = lowFilter(pressure);    //run analog thru
+  pressure = Filter(pressure);    //run analog thru
   Serial.print(accelx);       //test output value
   Serial.print(accely);       //test output value
   Serial.print(accelz);       //test output value
@@ -74,15 +80,15 @@ void loop() { // collect 5 times, then average, then filter
 }
 
 // put function definitions here:
-float lowFilter(float rawPressure) {         
+float Filter(float rawPressure) {         
   filtPress = (delta*rawPressure)+((1.0-delta)*prevFiltPress);
   
   prevFiltPress = filtPress;
   return filtPress;
 }
 
-float lowFilter2(float rawPressure) {    //not done yet, might not even be used
-  return pow(2.718, (1-exp(-delta*2*cutoffFrequency)));
+// float lowFilter2(float rawPressure) {    //not done yet, might not even be used
+//   return pow(2.718, (1-exp(-delta*2*cutoffFrequency)));
 
 
-}
+// }
